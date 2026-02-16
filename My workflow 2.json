@@ -1,0 +1,521 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2168ed1c-213b-4c34-a2dd-7208bc9a23b9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3ab6f60d-21f7-4975-91e6-53e6b1c120c4",
+              "name": "Location",
+              "value": "dwarka sector 12 delhi ",
+              "type": "string"
+            },
+            {
+              "id": "28a9a13c-d346-47bb-a634-e4546b4deae6",
+              "name": "Category ",
+              "value": "salon",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b817aeb8-58c5-4f42-ac06-d56ff072a021",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "https://nominatim.openstreetmap.org/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.Location }}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent ",
+              "value": "n8n-leadgen-partha"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "2d48cbc6-dadd-478c-965e-34ce3bd75fad",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      lat: parseFloat($json.lat),\n      lon: parseFloat($json.lon),\n      location_name: $json.display_name\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "1670d8c3-8307-4e58-be1e-9fce39f8f9d3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://overpass-api.de/api/interpreter",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "data",
+              "value": "=[out:json][timeout:25]; (   node[\"amenity\"=\"gym\"](around:800, {{$json.lat}}, {{$json.lon}});   node[\"leisure\"=\"fitness_centre\"](around:800, {{$json.lat}}, {{$json.lon}});   way[\"amenity\"=\"gym\"](around:800, {{$json.lat}}, {{$json.lon}});   way[\"leisure\"=\"fitness_centre\"](around:800, {{$json.lat}}, {{$json.lon}}); ); out body; >; out skel qt;"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "d529429a-e035-47a9-9822-e388cf26fc8d",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\n\nconst elements = $json.elements || [];\n\nfor (const el of elements) {\n  const tags = el.tags || {};\n\n  const lat = el.lat ?? el.center?.lat ?? null;\n  const lon = el.lon ?? el.center?.lon ?? null;\n\n  if (!tags.name || !lat || !lon) continue;\n\n  results.push({\n    name: tags.name,\n    lat,\n    lon,\n    phone: tags.phone || tags[\"contact:phone\"] || null,\n    website: tags.website || tags[\"contact:website\"] || null,\n    email: tags.email || tags[\"contact:email\"] || null,\n    socials: {\n      facebook: tags.facebook || null,\n      instagram: tags.instagram || null,\n    },\n    address: tags[\"addr:full\"] || null,\n    source: \"osm\"\n  });\n}\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "7c9bd46d-540b-4670-a273-0c591baf816c",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d7846dde-4df2-4225-b3d8-ffcf8d6b5291",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "90548e3d-072a-41d4-8a71-1031ea01f028",
+              "leftValue": "={{ $json.socials.instagram }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ef23d67c-5134-49b0-b7d8-db9f88426857",
+              "leftValue": "={{ $json.socials.facebook }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "f9c8dd67-5072-491a-8f5d-720373360a27",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "https://duckduckgo.com/html/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.name }}{{ $json.address }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1456,
+        -32
+      ],
+      "id": "5be33bc8-940a-42a2-b4a4-da3bf6e8e1c8",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $json.data || '';\nconst urls = html.match(/https?:\\/\\/[^\"\\s<>]+/g) || [];\n\nconst blacklist = [\n  'facebook.com',\n  'instagram.com',\n  'justdial.com',\n  'google.com',\n  'yelp.com',\n  'duckduckgo.com'\n];\n\nconst website = urls.find(u =>\n  !blacklist.some(d => u.includes(d))\n);\n\nreturn [{\n  json: {\n    ...$json,\n    discovered_website: website || null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        -32
+      ],
+      "id": "e0bcd793-0034-45a3-9ce1-159ecaf35e62",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bd246ff7-35d9-4d57-9362-ded6d40c0078",
+              "leftValue": "={{ $json.discovered_website }}",
+              "rightValue": false,
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1872,
+        -96
+      ],
+      "id": "598decf1-3f72-4bff-9dac-97a46b2a0fb7",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1e6P-Zh3f7QBF9unCDIB2NtyCHs1czSv8PiSAQaHs9eY",
+          "mode": "list",
+          "cachedResultName": "Businesses with websites",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e6P-Zh3f7QBF9unCDIB2NtyCHs1czSv8PiSAQaHs9eY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e6P-Zh3f7QBF9unCDIB2NtyCHs1czSv8PiSAQaHs9eY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [
+            "Business Name"
+          ],
+          "schema": [
+            {
+              "id": "Business Name",
+              "displayName": "Business Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1472,
+        176
+      ],
+      "id": "be889a45-0fe2-44cb-ba5c-265c016e12e3",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OSxUb7svtzzCgip3",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1e6P-Zh3f7QBF9unCDIB2NtyCHs1czSv8PiSAQaHs9eY",
+          "mode": "list",
+          "cachedResultName": "Businesses with websites",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e6P-Zh3f7QBF9unCDIB2NtyCHs1czSv8PiSAQaHs9eY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e6P-Zh3f7QBF9unCDIB2NtyCHs1czSv8PiSAQaHs9eY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [
+            "Business Name"
+          ],
+          "schema": [
+            {
+              "id": "Business Name",
+              "displayName": "Business Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "ec3e3981-5b49-4ac3-9a91-8dc13e9ffb55",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OSxUb7svtzzCgip3",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "c7e9cd1c-8d6a-49ef-bcef-4ed89a205550",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "623e7c9408a5b2b0a43bfa25dd2098aa2fa277716b361fc9aff411150a0efc62"
+  },
+  "id": "c4CJWNzsspkMPjibLiVHT",
+  "tags": []
+}
